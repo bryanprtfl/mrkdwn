@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MarkItDown API</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --border: #222;
+    --accent: #b5ff4d;
+    --accent2: #4daaff;
+    --muted: #555;
+    --text: #e8e8e8;
+    --text-dim: #888;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 32px;
+    margin-bottom: 48px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 3px 10px;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-family: var(--sans);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    color: var(--text-dim);
+    margin-top: 12px;
+    font-size: 13px;
+  }
+
+  /* Status dot */
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Sections */
+  .section { margin-bottom: 48px; }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    width: fit-content;
+    margin-bottom: 24px;
+  }
+  .tab {
+    padding: 8px 20px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 12px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    border-right: 1px solid var(--border);
+    transition: all 0.15s;
+  }
+  .tab:last-child { border-right: none; }
+  .tab.active {
+    background: var(--accent);
+    color: #000;
+    font-weight: 600;
+  }
+  .tab:not(.active):hover { color: var(--text); background: var(--surface); }
+
+  /* Panel */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Input group */
+  .input-group { margin-bottom: 16px; }
+  label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  input[type="text"], input[type="file"] {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+  input[type="file"] { cursor: pointer; }
+
+  .btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 12px 28px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Result */
+  .result-box {
+    margin-top: 24px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: none;
+  }
+  .result-box.show { display: block; }
+
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .result-header .badge {
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .badge.ok { background: var(--accent); color: #000; }
+  .badge.err { background: #ff4d4d; color: #fff; }
+
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  pre {
+    padding: 20px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  /* Docs */
+  .endpoint-card {
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .endpoint-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .method {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+  }
+  .method.get { background: #1a3a1a; color: #4dff91; border: 1px solid #4dff91; }
+  .method.post { background: #1a2a3a; color: var(--accent2); border: 1px solid var(--accent2); }
+
+  .path { font-size: 13px; color: var(--text); }
+  .desc-text { font-size: 12px; color: var(--text-dim); padding: 14px 16px; }
+
+  /* Loading */
+  .loader {
+    display: none;
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-left: 12px;
+    vertical-align: middle;
+  }
+  .loader.show { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Limits table */
+  table { border-collapse: collapse; width: 100%; }
+  td, th {
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    font-size: 12px;
+    text-align: left;
+  }
+  th { color: var(--text-dim); font-weight: 400; background: var(--surface); }
+  td:first-child { color: var(--accent); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="tag">REST API</div>
+    <h1>MarkItDown<span>.</span></h1>
+    <p class="subtitle">Converti qualsiasi file o URL in Markdown — PDF, DOCX, XLSX, HTML, YouTube e altro.</p>
+    <div class="status">
+      <div class="dot"></div>
+      <span id="statusText">Checking API status...</span>
+    </div>
+  </header>
+
+  <!-- TRY IT -->
+  <div class="section">
+    <div class="section-label">// Try it live</div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('url')">URL</button>
+      <button class="tab" onclick="switchTab('file')">File Upload</button>
+    </div>
+
+    <!-- URL Panel -->
+    <div class="panel active" id="panel-url">
+      <div class="input-group">
+        <label>URL DA CONVERTIRE</label>
+        <input type="text" id="urlInput" placeholder="https://esempio.com/articolo  oppure  https://youtube.com/watch?v=..." />
+      </div>
+      <button class="btn" onclick="convertUrl()" id="urlBtn">
+        Converti → Markdown
+        <span class="loader" id="urlLoader"></span>
+      </button>
+    </div>
+
+    <!-- File Panel -->
+    <div class="panel" id="panel-file">
+      <div class="input-group">
+        <label>FILE (PDF, DOCX, XLSX, PPTX, HTML...)</label>
+        <input type="file" id="fileInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.html,.csv,.json,.xml,.txt,.epub,.jpg,.png,.mp3,.wav" />
+      </div>
+      <button class="btn" onclick="convertFile()" id="fileBtn">
+        Converti → Markdown
+        <span class="loader" id="fileLoader"></span>
+      </button>
+    </div>
+
+    <!-- Result -->
+    <div class="result-box" id="resultBox">
+      <div class="result-header">
+        <span id="resultLabel">output</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="resultBadge" class="badge ok">200 OK</span>
+          <button class="copy-btn" onclick="copyResult()">[ copy ]</button>
+        </div>
+      </div>
+      <pre id="resultPre"></pre>
+    </div>
+  </div>
+
+  <!-- ENDPOINTS -->
+  <div class="section">
+    <div class="section-label">// Endpoints</div>
+
+    <div class="endpoint-card">
+      <div class="endpoint-header">
+        <span class="method get">GET</span>
+        <span class="path">/</span>
+      </div>
+      <div class="desc-text">Health check. Ritorna stato API e lista endpoint disponibili.</div>
+    </div>
+
+    <div class="endpoint-card">
+      <div class="endpoint-header">
+        <span class="method post">POST</span>
+        <span class="path">/api/convert/url</span>
+      </div>
+      <div class="desc-text">
+        Converti un URL in Markdown.<br><br>
+        <strong style="color:var(--text)">Body (JSON):</strong> <code>{ "url": "https://..." }</code><br>
+        <strong style="color:var(--text)">Response:</strong> <code>{ "success": true, "markdown": "..." }</code>
+      </div>
+    </div>
+
+    <div class="endpoint-card">
+      <div class="endpoint-header">
+        <span class="method post">POST</span>
+        <span class="path">/api/convert/file</span>
+      </div>
+      <div class="desc-text">
+        Converti un file in Markdown.<br><br>
+        <strong style="color:var(--text)">Body:</strong> <code>multipart/form-data</code> — campo <code>file</code><br>
+        <strong style="color:var(--text)">Response:</strong> <code>{ "success": true, "filename": "...", "markdown": "..." }</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIMITS -->
+  <div class="section">
+    <div class="section-label">// Limiti Vercel Free Tier</div>
+    <table>
+      <tr><th>Limite</th><th>Valore</th></tr>
+      <tr><td>Timeout</td><td>10 secondi per richiesta</td></tr>
+      <tr><td>Payload massimo</td><td>4.5 MB</td></tr>
+      <tr><td>Invocazioni/mese</td><td>100,000</td></tr>
+      <tr><td>Memoria</td><td>1024 MB</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  // Detect base URL (works both locally and on Vercel)
+  const BASE = window.location.origin;
+
+  // Check API health on load
+  fetch(BASE + '/').then(r => r.json()).then(d => {
+    document.getElementById('statusText').textContent = 'API online — ' + BASE;
+  }).catch(() => {
+    document.getElementById('statusText').textContent = 'API non raggiungibile';
+    document.querySelector('.dot').style.background = '#ff4d4d';
+  });
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+    document.getElementById('resultBox').classList.remove('show');
+  }
+
+  function showResult(label, badge, isOk, text) {
+    const box = document.getElementById('resultBox');
+    document.getElementById('resultLabel').textContent = label;
+    const b = document.getElementById('resultBadge');
+    b.textContent = badge;
+    b.className = 'badge ' + (isOk ? 'ok' : 'err');
+    document.getElementById('resultPre').textContent = text;
+    box.classList.add('show');
+  }
+
+  async function convertUrl() {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) { alert('Inserisci un URL'); return; }
+
+    const btn = document.getElementById('urlBtn');
+    const loader = document.getElementById('urlLoader');
+    btn.disabled = true;
+    loader.classList.add('show');
+
+    try {
+      const res = await fetch(BASE + '/api/convert/url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showResult('markdown output', '200 OK', true, data.markdown);
+      } else {
+        showResult('error', res.status + ' ERROR', false, data.error + '\n\n' + (data.detail || ''));
+      }
+    } catch (e) {
+      showResult('error', 'NETWORK ERROR', false, e.message);
+    } finally {
+      btn.disabled = false;
+      loader.classList.remove('show');
+    }
+  }
+
+  async function convertFile() {
+    const fileInput = document.getElementById('fileInput');
+    if (!fileInput.files[0]) { alert('Seleziona un file'); return; }
+
+    const btn = document.getElementById('fileBtn');
+    const loader = document.getElementById('fileLoader');
+    btn.disabled = true;
+    loader.classList.add('show');
+
+    const form = new FormData();
+    form.append('file', fileInput.files[0]);
+
+    try {
+      const res = await fetch(BASE + '/api/convert/file', {
+        method: 'POST',
+        body: form
+      });
+      const data = await res.json();
+      if (data.success) {
+        showResult('markdown output — ' + data.filename, '200 OK', true, data.markdown);
+      } else {
+        showResult('error', res.status + ' ERROR', false, data.error + '\n\n' + (data.detail || ''));
+      }
+    } catch (e) {
+      showResult('error', 'NETWORK ERROR', false, e.message);
+    } finally {
+      btn.disabled = false;
+      loader.classList.remove('show');
+    }
+  }
+
+  function copyResult() {
+    const text = document.getElementById('resultPre').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = '[ copied! ]';
+      setTimeout(() => btn.textContent = '[ copy ]', 1500);
+    });
+  }
+
+  // Enter key on URL input
+  document.getElementById('urlInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') convertUrl();
+  });
+</script>
+</body>
+</html>
